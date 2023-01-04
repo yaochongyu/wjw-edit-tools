@@ -6,9 +6,8 @@
 // @description  Some tools for https://www.wenjuan.com
 // @supportURL   https://github.com/yaochongyu/wjw-edit-tools
 // @match        https://www.wenjuan.com/edit/survey/*
-// 
-// @updateURL    https://gitee.com/yaochongyu/wjw-edit-tools/raw/master/wjw-edit-tools.js
-// @downloadURL  https://gitee.com/yaochongyu/wjw-edit-tools/raw/master/wjw-edit-tools.js
+// @updateURL    https://gitee.com/yaochongyu/wjw-edit-tools/raw/dev/wjw-edit-tools_beta.js
+// @downloadURL  https://gitee.com/yaochongyu/wjw-edit-tools/raw/dev/wjw-edit-tools_beta.js
 // ==/UserScript==
 
 var qu_nu = /(?<!\\)\[\s*qu-nu\s*\]/, op_nu = /(?<!\\)\[\s*op-nu\s*\]/;
