@@ -3,18 +3,19 @@
 // @namespace    https://github.com/yaochongyu/wjw-edit-tools
 // @author       yaochongyu
 // @version      1.2.2
+// @grant        GM_addStyle
 // @description  Some tools for https://www.wenjuan.com
 // @supportURL   https://github.com/yaochongyu/wjw-edit-tools
 // @match        https://www.wenjuan.com/edit/survey/*
 // @updateURL    https://gitee.com/yaochongyu/wjw-edit-tools/raw/master/wjw-edit-tools.js
 // @downloadURL  https://gitee.com/yaochongyu/wjw-edit-tools/raw/master/wjw-edit-tools.js
-// @grant        GM_addStyle
 // ==/UserScript==
 
-const quNu = /(?<!\\)\[\s*qu-nu\s*\]/, opNu = /(?<!\\)\[\s*op-nu\s*\]/;
+const EscapeCharList = { "\\%": "%", "\\[": "\[", "\\]": "\]" };
+const ValueList = { "qu-nu": 0, "op-nu": 0 };
+const Exp = /(?<!\\)\[[^\[\]]*(?<!\\)\]/g, ExpText = /(?<=\[).*(?=\])/;
 
-const style =
-    "*.wjw-tools{\
+const style = "*.wjw-tools{\
     font-family: microsoft;\
     font-size: 17px;\
     margin: 5px;\
@@ -92,17 +93,70 @@ function getQueNum(elem) {
 function getQueList() {
     let res = [];
     let a = document.getElementsByClassName("q-content");
-    for (let i = 0; i < x.length; i++) {
+    for (let i = 0; i < a.length; i++) {
         let elem = a[i], nu = getQueNum(elem);
         if (nu > 0) res[nu - 1] = elem;
     }
     return res;
 }
 
+//此函数需与finishEscapeChar函数一起使用
+function startEscape(str, escapeChars) {
+    for (let key in escapeChars) {
+        let value = escapeChars[key];
+        str.replace(RegExp(key, "g"), " %" + String(value.charCodeAt())) + " ";
+    }
+    return str;
+}
+
+//此函数需与startEscapeChar函数一起使用
+function finishEscape(str, escapeChars) {
+    for (let key in escapeChars) {
+        let value = escapeChars[key];
+        str.replace(" %" + String(value.charCodeAt()) + " ", key);
+    }
+    return str;
+}
+
+function expReslove(expText, valueList) {
+    let res = expText;
+    for (let key in valueList) {
+        let value = valueList[key];
+        res = res.replace(RegExp("(?<=\\b)" + key + "(?=\\b)"), " " + String(value) + " ");
+    }
+    return res;
+}
+
+function textReslove(text, valueList) {
+    let res = text;
+    res = startEscape(res, EscapeCharList);
+
+    var duplicateRemoval = function (array) {
+        if (array.length == 0) return array;
+        array.sort();
+        let res = [];
+        for (let i = 0; i < array.length - 1; i++) {
+            if (array[i] != array[i + 1]) res.push(array[i]);
+        }
+        res.push(array[array.length - 1]);
+        return res;
+    }
+
+    let expList = duplicateRemoval(res.match(Exp));
+
+    for (let i = 0; i < expList.length; i++) {
+        let expText = expList[i];
+        res = res.replaceAll(expText, expReslove(expText.match(ExpText)[0], valueList));
+    }
+
+    res = finishEscape(res, EscapeCharList);
+    return res;
+}
+
 function setAnswer(elem, answer) {
     function format(answer) {
         let a = answer.charCodeAt();
-        if ('a'.charCodeAt() <= a && a <= 'z'.charCodeAt()) return a - 'a'.charCodeAt();
+        if ('a' <= a && a <= 'z') return a - 'a'.charCodeAt();
         else return a - 'A'.charCodeAt();
     }
 
@@ -115,15 +169,6 @@ function setAnswer(elem, answer) {
 
     if (isSelected(index)) return;
     else b[index].click();
-}
-
-function setAnswers(s, t, answers) {
-    let queList = getQueList();
-    for (let i = s; i <= t; i++) {
-        let x = queList[i - 1];
-        setAnswer(x, answers[i - s]);
-    }
-    restart();
 }
 
 function setText(elem, text) {
@@ -150,30 +195,36 @@ function copy(n) {
     restart();
 }
 
-function setOptionsText(s, t, text) {
-    function strReslove(text, i, j) {
-        let res = text.replace(quNu, String(i)).replace(opNu, String(j));
-        res = res.replace("\\[", "[").replace("\\]", "]").replace("\\\\", "\\");
-        return res;
-    }
-    let QueList = getQueList();
+function setAnswers(s, t, answers) {
+    let queList = getQueList();
     for (let i = s; i <= t; i++) {
-        let x = QueList[i - 1];
+        let x = queList[i - 1];
+        setAnswer(x, answers[i - s]);
+    }
+    restart();
+}
+
+function setOptionsText(s, t, text) {
+    let queList = getQueList();
+    for (let i = s; i <= t; i++) {
+        let x = queList[i - 1];
         for (let j = 1; j <= 4; j++) {
-            setOption(x, j, String.fromCharCode("A".charCodeAt() + j - 1) + strReslove(text, i - s + 1, j));
+            let valueList = $.extend(true,{},ValueList);
+            valueList["qu-nu"] = i - s + 1; valueList["op-nu"] = j;
+            setOption(x, j, String.fromCharCode("A".charCodeAt() + j - 1) + textReslove(text, valueList));
         }
     }
     restart();
 }
 
 function setTitles(s, t, text) {
-    function strReslove(text, i) {
-        return text.replace(quNu, String(i)).replace("\\[", "[").replace("\\]", "]").replace("\\\\", "\\");
-    }
-    let QueList = getQueList();
+    let queList = getQueList();
     for (let i = s; i <= t; i++) {
-        let x = QueList[i - 1];
-        setTitle(x, strReslove(text, i - s + 1));
+        let x = queList[i - 1];
+        let valueList = $.extend(true,{},ValueList);
+        valueList["qu-nu"] = i - s + 1;
+
+        setTitle(x, textReslove(text, valueList));
     }
     restart();
 }
