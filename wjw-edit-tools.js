@@ -15,7 +15,7 @@ const EscapeCharList = { "\\%": "%", "\\[": "\[", "\\]": "\]" };
 const ValueList = { "qu-nu": 0, "op-nu": 0 };
 const Exp = /(?<!\\)\[[^\[\]]*(?<!\\)\]/g, ExpText = /(?<=\[).*(?=\])/;
 
-const style = "*.wjw-tools{\
+const Style = "*.wjw-tools{\
 font-family: microsoft;\
 font-size: 17px;\
 margin: 5px;\
@@ -86,7 +86,7 @@ function restart() {
 function getQueNum(elem) {
     let a = elem.getElementsByClassName("q-seq");
     if (a.length == 0) return 0;
-    let x = Number(a[0].textContent)
+    let x = Number(a[0].textContent);
     return isNaN(x) ? 0 : x;
 }
 
@@ -114,9 +114,9 @@ function startEscape(str, escapeChars) {
 function finishEscape(str) {
     let res = str;
     let a = res.match(/%\d+(?!\d)/g);
-    if(a == null) return res;
-    for (let i = 0;i < a.length;i++) {
-        let x = a[i], value = String.fromCharCode(Number(x.match(/(?<=%)\d+/)[0]));  
+    if (a == null) return res;
+    for (let i = 0; i < a.length; i++) {
+        let x = a[i], value = String.fromCharCode(Number(x.match(/(?<=%)\d+/)[0]));
         res = res.replaceAll(x, value);
     }
     res = res.replaceAll("\u200b", "");
@@ -137,7 +137,7 @@ function textReslove(text, valueList) {
     res = startEscape(res, EscapeCharList);
 
     let expList = res.match(Exp);
-    if(expList != null){
+    if (expList != null) {
         for (let i = 0; i < expList.length; i++) {
             let expText = expList[i];
             res = res.replaceAll(expText, expReslove(expText.match(ExpText)[0], valueList));
@@ -149,13 +149,8 @@ function textReslove(text, valueList) {
 }
 
 function setAnswer(elem, answer) {
-    function format(answer) {
-        let a = answer.charCodeAt();
-        if ('a' <= a && a <= 'z') return a - 'a'.charCodeAt();
-        else return a - 'A'.charCodeAt();
-    }
 
-    let index = format(answer);
+    let index = toUpperCase(answer);
     let b = elem.getElementsByClassName("wj-checkbox__original");
 
     function isSelected(answer) {
@@ -204,7 +199,7 @@ function setOptionsText(s, t, text) {
     for (let i = s; i <= t; i++) {
         let x = queList[i - 1];
         for (let j = 1; j <= 4; j++) {
-            let valueList = $.extend(true,{},ValueList);
+            let valueList = $.extend(true, {}, ValueList);
             valueList["qu-nu"] = i - s + 1; valueList["op-nu"] = j;
             setOption(x, j, String.fromCharCode("A".charCodeAt() + j - 1) + textReslove(text, valueList));
         }
@@ -216,7 +211,7 @@ function setTitles(s, t, text) {
     let queList = getQueList();
     for (let i = s; i <= t; i++) {
         let x = queList[i - 1];
-        let valueList = $.extend(true,{},ValueList);
+        let valueList = $.extend(true, {}, ValueList);
         valueList["qu-nu"] = i - s + 1;
 
         setTitle(x, textReslove(text, valueList));
@@ -232,7 +227,7 @@ function click_copyButton() {
 function click_setAnswersButton() {
     let str = document.getElementById("text-box2").value;
     let a = str.split(/\s+/), b = "";
-    if(a.length < 2) return;
+    if (a.length < 2) return;
     b += a[2];
     for (let i = 3; i < a.length; i++) b += " " + a[i];
     setAnswers(a[0], a[1], b);
@@ -241,7 +236,7 @@ function click_setAnswersButton() {
 function click_setOpointsButton() {
     let str = document.getElementById("text-box3").value;
     let a = str.split(/\s+/), b = "";
-    if(a.length < 2) return;
+    if (a.length < 2) return;
     for (let i = 2; i < a.length; i++) b += a[i];
     setOptionsText(a[0], a[1], b);
 }
@@ -249,14 +244,14 @@ function click_setOpointsButton() {
 function click_setTitlesButton() {
     let str = document.getElementById("text-box4").value;
     let a = str.split(/\s+/), b = "";
-    if(a.length < 2) return;
+    if (a.length < 2) return;
     b += a[2];
     for (let i = 3; i < a.length; i++) b += " " + a[i];
     setTitles(a[0], a[1], b);
 }
 
 function display() {
-    GM_addStyle(style);
+    GM_addStyle(Style);
     document.getElementsByClassName("background-music child-setting")[0].insertAdjacentHTML("afterend", Elem1 + Elem2 + Elem3 + Elem4);
     document.getElementById("copy-button").onclick = click_copyButton;
     document.getElementById("set-answers-button").onclick = click_setAnswersButton;
