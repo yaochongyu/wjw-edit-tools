@@ -16,29 +16,29 @@ const ValueList = { "qu-nu": 0, "op-nu": 0 };
 const Exp = /(?<!\\)\[[^\[\]]*(?<!\\)\]/g, ExpText = /(?<=\[).*(?=\])/;
 
 const style = "*.wjw-tools{\
-    font-family: microsoft;\
-    font-size: 17px;\
-    margin: 5px;\
-    outline-style: none;\
-    display: table;\
-    border-radius: 5px;\
-    border-style: none;\
+font-family: microsoft;\
+font-size: 17px;\
+margin: 5px;\
+outline-style: none;\
+display: table;\
+border-radius: 5px;\
+border-style: none;\
 }\
 button.wjw-tools{\
-    width: 200px;\
-    height: 30px;\
-    color:white;\
-    background-color:hotpink;\
-    cursor: pointer;\
+width: 200px;\
+height: 30px;\
+color:white;\
+background-color:hotpink;\
+cursor: pointer;\
 }\
 button.wjw-tools:hover{\
-    background-color: pink;\
-    transform: scale(1.01);\
+background-color: pink;\
+transform: scale(1.01);\
 }\
 input.wjw-tools{\
-    border: 1px solid #ccc;\
-    width: 200px;\
-    height: 30px;\
+border: 1px solid #ccc;\
+width: 200px;\
+height: 30px;\
 }";
 
 const Elem1 = "<div class = \"wjw-tools box\"><input id=\"text-box1\" class = \"wjw-tools input\"><button \
@@ -102,27 +102,32 @@ function getQueList() {
 
 //此函数需与finishEscapeChar函数一起使用
 function startEscape(str, escapeChars) {
+    let res = str;
     for (let key in escapeChars) {
         let value = escapeChars[key];
-        str.replace(RegExp(key, "g"), " %" + String(value.charCodeAt())) + " ";
+        res = res.replaceAll(key, "%" + String(value.charCodeAt()) + "\u200b");
     }
-    return str;
+    return res;
 }
 
 //此函数需与startEscapeChar函数一起使用
-function finishEscape(str, escapeChars) {
-    for (let key in escapeChars) {
-        let value = escapeChars[key];
-        str.replace(" %" + String(value.charCodeAt()) + " ", key);
+function finishEscape(str) {
+    let res = str;
+    let a = res.match(/%\d+(?!\d)/g);
+    if(a == null) return res;
+    for (let i = 0;i < a.length;i++) {
+        let x = a[i], value = String.fromCharCode(Number(x.match(/(?<=%)\d+/)[0]));  
+        res = res.replaceAll(x, value);
     }
-    return str;
+    res = res.replaceAll("\u200b", "");
+    return res;
 }
 
 function expReslove(expText, valueList) {
     let res = expText;
     for (let key in valueList) {
         let value = valueList[key];
-        res = res.replace(RegExp("(?<=\\b)" + key + "(?=\\b)"), " " + String(value) + " ");
+        res = res.replace(RegExp("(?<=\\b)" + key + "(?=\\b)"), String(value));
     }
     return res;
 }
@@ -131,25 +136,15 @@ function textReslove(text, valueList) {
     let res = text;
     res = startEscape(res, EscapeCharList);
 
-    var duplicateRemoval = function (array) {
-        if (array.length == 0) return array;
-        array.sort();
-        let res = [];
-        for (let i = 0; i < array.length - 1; i++) {
-            if (array[i] != array[i + 1]) res.push(array[i]);
+    let expList = res.match(Exp);
+    if(expList != null){
+        for (let i = 0; i < expList.length; i++) {
+            let expText = expList[i];
+            res = res.replaceAll(expText, expReslove(expText.match(ExpText)[0], valueList));
         }
-        res.push(array[array.length - 1]);
-        return res;
     }
 
-    let expList = duplicateRemoval(res.match(Exp));
-
-    for (let i = 0; i < expList.length; i++) {
-        let expText = expList[i];
-        res = res.replaceAll(expText, expReslove(expText.match(ExpText)[0], valueList));
-    }
-
-    res = finishEscape(res, EscapeCharList);
+    res = finishEscape(res);
     return res;
 }
 
@@ -237,13 +232,16 @@ function click_copyButton() {
 function click_setAnswersButton() {
     let str = document.getElementById("text-box2").value;
     let a = str.split(/\s+/), b = "";
-    for (let i = 2; i < a.length; i++) b += a[i];
+    if(a.length < 2) return;
+    b += a[2];
+    for (let i = 3; i < a.length; i++) b += " " + a[i];
     setAnswers(a[0], a[1], b);
 }
 
 function click_setOpointsButton() {
     let str = document.getElementById("text-box3").value;
     let a = str.split(/\s+/), b = "";
+    if(a.length < 2) return;
     for (let i = 2; i < a.length; i++) b += a[i];
     setOptionsText(a[0], a[1], b);
 }
@@ -251,7 +249,9 @@ function click_setOpointsButton() {
 function click_setTitlesButton() {
     let str = document.getElementById("text-box4").value;
     let a = str.split(/\s+/), b = "";
-    for (let i = 2; i < a.length; i++) b += a[i];
+    if(a.length < 2) return;
+    b += a[2];
+    for (let i = 3; i < a.length; i++) b += " " + a[i];
     setTitles(a[0], a[1], b);
 }
 
