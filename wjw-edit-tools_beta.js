@@ -2,86 +2,75 @@
 // @name         wjw-edit-tools
 // @namespace    https://github.com/yaochongyu/wjw-edit-tools
 // @author       yaochongyu
-// @version      1.2.1
+// @version      1.2.2
+// @grant        GM_addStyle
 // @description  Some tools for https://www.wenjuan.com
 // @supportURL   https://github.com/yaochongyu/wjw-edit-tools
 // @match        https://www.wenjuan.com/edit/survey/*
-// @updateURL    https://gitee.com/yaochongyu/wjw-edit-tools/raw/dev/wjw-edit-tools_beta.js
-// @downloadURL  https://gitee.com/yaochongyu/wjw-edit-tools/raw/dev/wjw-edit-tools_beta.js
+// @updateURL    https://gitee.com/yaochongyu/wjw-edit-tools/raw/release/wjw-edit-tools_beta.js
+// @downloadURL  https://gitee.com/yaochongyu/wjw-edit-tools/raw/release/wjw-edit-tools_beta.js
 // ==/UserScript==
 
-var qu_nu = /(?<!\\)\[\s*qu-nu\s*\]/, op_nu = /(?<!\\)\[\s*op-nu\s*\]/;
+const EscapeCharList = { "\\%": "%", "\\[": "\[", "\\]": "\]" };
+const ValueList = { "qu-nu": 0, "op-nu": 0 };
+const Exp = /(?<!\\)\[[^\[\]]*(?<!\\)\]/g, ExpText = /(?<=\[).*(?=\])/;
 
-var style ="<style>\
-*.wjw-tools{\
-    font-family: microsoft;\
-    font-size: 17px;\
-    margin: 5px;\
-    outline-style: none;\
-    display: table;\
-    border-radius: 5px;\
-    border-style: none;\
+const Style = "*.wjw-tools{\
+font-family: microsoft;\
+font-size: 17px;\
+margin: 5px;\
+outline-style: none;\
+display: table;\
+border-radius: 5px;\
+border-style: none;\
 }\
 button.wjw-tools{\
-    width: 200px;\
-    height: 30px;\
-    color:white;\
-    background-color:hotpink;\
-    cursor: pointer;\
+width: 200px;\
+height: 30px;\
+color:white;\
+background-color:hotpink;\
+cursor: pointer;\
 }\
 button.wjw-tools:hover{\
-    background-color: pink;\
-    transform: scale(1.01);\
+background-color: pink;\
+transform: scale(1.01);\
 }\
 input.wjw-tools{\
-    border: 1px solid #ccc;\
-    width: 200px;\
-    height: 30px;\
-}\
-</style>";
+border: 1px solid #ccc;\
+width: 200px;\
+height: 30px;\
+}";
 
-var Elem1 = "<div class = \"wjw-tools box\"><input id=\"text_box1\" class = \"wjw-tools input\"><button \
-class = \"wjw-tools button\" id = \"copy_button\">copy</button></div>";
+const Elem1 = "<div class = \"wjw-tools box\"><input id=\"text-box1\" class = \"wjw-tools input\"><button \
+class = \"wjw-tools button\" id = \"copy-button\">copy</button></div>";
 
-var Elem2 = "<div class = \"wjw-tools box\"><input id=\"text_box2\" class = \"wjw-tools input\"><button \
-class = \"wjw-tools button\" id = \"set_answers_button\">set-answers</button></div>";
+const Elem2 = "<div class = \"wjw-tools box\"><input id=\"text-box2\" class = \"wjw-tools input\"><button \
+class = \"wjw-tools button\" id = \"set-answers-button\">set-answers</button></div>";
 
-var Elem3 = "<div class = \"wjw-tools box\"><input id=\"text_box3\" class = \"wjw-tools input\"><button \
-class = \"wjw-tools button\" id = \"set_opoints_button\">set-options</button></div>";
+const Elem3 = "<div class = \"wjw-tools box\"><input id=\"text-box3\" class = \"wjw-tools input\"><button \
+class = \"wjw-tools button\" id = \"set-opoints-button\">set-options</button></div>";
 
-var Elem4 = "<div class = \"wjw-tools box\"><input id=\"text_box4\" class = \"wjw-tools input\"><button \
-class = \"wjw-tools button\" id = \"set_titles_button\">set-titles</button></div>";
+const Elem4 = "<div class = \"wjw-tools box\"><input id=\"text-box4\" class = \"wjw-tools input\"><button \
+class = \"wjw-tools button\" id = \"set-titles-button\">set-titles</button></div>";
 
 (function () {
     work();
 })();
 
 function work() {
-    if (check()) {
+    if (webIsOk()) {
         display();
         return;
     }
     setTimeout(work, 10)
 }
 
-function create_elem(type, id, class_name, style = "", text = "") {
-    if (type == "input") {
-        return "<input id=" + id + " class=" + class_name + (style == "" ? " style=" : "") + style + ">";
-    }
-    else if (type == "button") {
-        return "<button id=" + id + " class=" + class_name + (style == "" ? " style=" : "") + style + ">" + text + "</button>";
-    }
-    else if (type == "div") {
-        return "<button id=" + id + " class=" + class_name + (style == "" ? " style=" : "") + style + ">" + text + "</button>"
-    }
-}
-
-function check() {
+function webIsOk() {
     return document.getElementsByClassName("background-music child-setting").length > 0;
 }
 
 function restart() {
-    var flag = false;
+    let flag = false;
     var check = function () { return document.getElementsByClassName("tab-option left-tab-option").length > 0; };
     function work() {
         flag = check();
@@ -94,138 +83,178 @@ function restart() {
     work();
 }
 
-function get_num(elem) {
-    var a = elem.getElementsByClassName("q-seq");
+function getQueNum(elem) {
+    let a = elem.getElementsByClassName("q-seq");
     if (a.length == 0) return 0;
-    var x = Number(a[0].textContent)
+    let x = Number(a[0].textContent);
     return isNaN(x) ? 0 : x;
 }
 
-function get_que_list() {
-    var res = [];
-    var x = document.getElementsByClassName("q-content");
-    for (var i = 0; i < x.length; i++) {
-        var elem = x[i], nu = get_num(elem);
-        if (nu > 0) {
-            res[nu - 1] = elem;
-        }
+function getQueList() {
+    let res = [];
+    let a = document.getElementsByClassName("q-content");
+    for (let i = 0; i < a.length; i++) {
+        let elem = a[i], nu = getQueNum(elem);
+        if (nu > 0) res[nu - 1] = elem;
     }
     return res;
 }
 
-function set_answer(elem, answer) {
-    function format(answer) {
-        var a = answer.charCodeAt();
-        if ('a'.charCodeAt() <= a && a <= 'z'.charCodeAt()) {
-            return a - 'a'.charCodeAt();
-        }
-        else {
-            return a - 'A'.charCodeAt();
+//此函数需与finishEscapeChar函数一起使用
+function startEscape(str, escapeChars) {
+    let res = str;
+    for (let key in escapeChars) {
+        let value = escapeChars[key];
+        res = res.replaceAll(key, "%" + String(value.charCodeAt()) + "\u200b");
+    }
+    return res;
+}
+
+//此函数需与startEscapeChar函数一起使用
+function finishEscape(str) {
+    let res = str;
+    let a = res.match(/%\d+(?!\d)/g);
+    if (a == null) return res;
+    for (let i = 0; i < a.length; i++) {
+        let x = a[i], value = String.fromCharCode(Number(x.match(/(?<=%)\d+/)[0]));
+        res = res.replaceAll(x, value);
+    }
+    res = res.replaceAll("\u200b", "");
+    return res;
+}
+
+function expReslove(expText, valueList) {
+    let res = expText;
+    for (let key in valueList) {
+        let value = valueList[key];
+        res = res.replace(RegExp("(?<=\\b)" + key + "(?=\\b)"), String(value));
+    }
+    return res;
+}
+
+function textReslove(text, valueList) {
+    let res = text;
+    res = startEscape(res, EscapeCharList);
+
+    let expList = res.match(Exp);
+    if (expList != null) {
+        for (let i = 0; i < expList.length; i++) {
+            let expText = expList[i];
+            res = res.replaceAll(expText, expReslove(expText.match(ExpText)[0], valueList));
         }
     }
 
-    var a = format(answer);
-    var b = elem.getElementsByClassName("wj-checkbox__original");
+    res = finishEscape(res);
+    return res;
+}
 
-    function is_selected(answer) {
+function setAnswer(elem, answer) {
+
+    let index = toUpperCase(answer);
+    let b = elem.getElementsByClassName("wj-checkbox__original");
+
+    function isSelected(answer) {
         return b[answer].parentNode.className.indexOf("is-checked") != -1;
     }
 
-    if (is_selected(a)) return;
-    else b[a].click();
+    if (isSelected(index)) return;
+    else b[index].click();
 }
 
-function set_answers(s, t, answers) {
-    var que_list = get_que_list();
-    for (var i = s; i <= t; i++) {
-        var x = que_list[i - 1];
-        set_answer(x, answers[i - s]);
-    }
-    restart();
-}
-
-function set_text(elem, text) {
+function setText(elem, text) {
     elem.dispatchEvent(new Event("focus"));
     elem.textContent = text;
     elem.dispatchEvent(new Event("input"))
     elem.dispatchEvent(new Event("blur"))
 }
 
-function set_option(elem, index, text) {
-    var a = elem.getElementsByClassName("transition-box")[0].getElementsByClassName("richTextArea")[index - 1];
-    set_text(a, text);
+function setOption(elem, index, text) {
+    let a = elem.getElementsByClassName("transition-box")[0].getElementsByClassName("richTextArea")[index - 1];
+    setText(a, text);
 }
 
-function set_title(elem, text) {
-    var x = elem.getElementsByClassName("richTextArea")[0];
-    set_text(x, text);
+function setTitle(elem, text) {
+    let x = elem.getElementsByClassName("richTextArea")[0];
+    setText(x, text);
 }
 
 function copy(n) {
-    for (var i = 1; i <= n; i++) {
+    for (let i = 1; i <= n; i++) {
         document.getElementsByClassName("question-module draggable-module question-focus")[0].getElementsByClassName("svg-icon wj-tooltip q-operate-icon")[3].click();
     }
     restart();
 }
 
-function set_options_text(s, t, text) {
-    function str_reslove(text, i, j) {
-        var res = text.replace(qu_nu, String(i)).replace(op_nu, String(j));
-        res = res.replace("\\[", "[").replace("\\]", "]").replace("\\\\", "\\");
-        return res;
+function setAnswers(s, t, answers) {
+    let queList = getQueList();
+    for (let i = s; i <= t; i++) {
+        let x = queList[i - 1];
+        setAnswer(x, answers[i - s]);
     }
-    var que_list = get_que_list();
-    for (var i = s; i <= t; i++) {
-        var x = que_list[i - 1];
-        for (var j = 1; j <= 4; j++) {
-            set_option(x, j, String.fromCharCode("A".charCodeAt() + j - 1) + str_reslove(text, i - s + 1, j));
+    restart();
+}
+
+function setOptionsText(s, t, text) {
+    let queList = getQueList();
+    for (let i = s; i <= t; i++) {
+        let x = queList[i - 1];
+        for (let j = 1; j <= 4; j++) {
+            let valueList = $.extend(true, {}, ValueList);
+            valueList["qu-nu"] = i - s + 1; valueList["op-nu"] = j;
+            setOption(x, j, String.fromCharCode("A".charCodeAt() + j - 1) + textReslove(text, valueList));
         }
     }
     restart();
 }
 
-function set_titles(s, t, text) {
-    function str_reslove(text, i) {
-        return text.replace(qu_nu, String(i)).replace("\\[", "[").replace("\\]", "]").replace("\\\\", "\\");
-    }
-    var que_list = get_que_list();
-    for (var i = s; i <= t; i++) {
-        var x = que_list[i - 1];
-        set_title(x, str_reslove(text, i - s + 1));
+function setTitles(s, t, text) {
+    let queList = getQueList();
+    for (let i = s; i <= t; i++) {
+        let x = queList[i - 1];
+        let valueList = $.extend(true, {}, ValueList);
+        valueList["qu-nu"] = i - s + 1;
+
+        setTitle(x, textReslove(text, valueList));
     }
     restart();
 }
 
-function click_function1() {
-    var elem = document.getElementById("text_box1");
+function click_copyButton() {
+    let elem = document.getElementById("text-box1");
     copy(Number(elem.value));
 }
 
-function click_function2() {
-    var str = document.getElementById("text_box2").value;
-    var a = str.split(/\s+/), b = "";
-    for (var i = 2; i < a.length; i++) b += a[i];
-    set_answers(a[0], a[1], b);
+function click_setAnswersButton() {
+    let str = document.getElementById("text-box2").value;
+    let a = str.split(/\s+/), b = "";
+    if (a.length < 2) return;
+    b += a[2];
+    for (let i = 3; i < a.length; i++) b += " " + a[i];
+    setAnswers(a[0], a[1], b);
 }
 
-function click_function3() {
-    var str = document.getElementById("text_box3").value;
-    var a = str.split(/\s+/), b = "";
-    for (var i = 2; i < a.length; i++) b += a[i];
-    set_options_text(a[0], a[1], b);
+function click_setOpointsButton() {
+    let str = document.getElementById("text-box3").value;
+    let a = str.split(/\s+/), b = "";
+    if (a.length < 2) return;
+    for (let i = 2; i < a.length; i++) b += a[i];
+    setOptionsText(a[0], a[1], b);
 }
 
-function click_function4() {
-    var str = document.getElementById("text_box4").value;
-    var a = str.split(/\s+/), b = "";
-    for (var i = 2; i < a.length; i++) b += a[i];
-    set_titles(a[0], a[1], b);
+function click_setTitlesButton() {
+    let str = document.getElementById("text-box4").value;
+    let a = str.split(/\s+/), b = "";
+    if (a.length < 2) return;
+    b += a[2];
+    for (let i = 3; i < a.length; i++) b += " " + a[i];
+    setTitles(a[0], a[1], b);
 }
 
 function display() {
-    document.getElementsByClassName("background-music child-setting")[0].insertAdjacentHTML("afterend", style + Elem1 + Elem2 + Elem3 + Elem4);
-    document.getElementById("copy_button").onclick = click_function1;
-    document.getElementById("set_answers_button").onclick = click_function2;
-    document.getElementById("set_opoints_button").onclick = click_function3;
-    document.getElementById("set_titles_button").onclick = click_function4;
+    GM_addStyle(Style);
+    document.getElementsByClassName("background-music child-setting")[0].insertAdjacentHTML("afterend", Elem1 + Elem2 + Elem3 + Elem4);
+    document.getElementById("copy-button").onclick = click_copyButton;
+    document.getElementById("set-answers-button").onclick = click_setAnswersButton;
+    document.getElementById("set-opoints-button").onclick = click_setOpointsButton;
+    document.getElementById("set-titles-button").onclick = click_setTitlesButton;
 }
