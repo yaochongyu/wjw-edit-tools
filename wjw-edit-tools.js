@@ -2,7 +2,7 @@
 // @name         wjw-edit-tools
 // @namespace    https://github.com/yaochongyu/wjw-edit-tools
 // @author       yaochongyu
-// @version      1.2.2
+// @version      1.2.3
 // @grant        GM_addStyle
 // @description  Some tools for https://www.wenjuan.com
 // @supportURL   https://github.com/yaochongyu/wjw-edit-tools
@@ -11,9 +11,9 @@
 // @downloadURL  https://gitee.com/yaochongyu/wjw-edit-tools/raw/master/wjw-edit-tools.js
 // ==/UserScript==
 
-const EscapeCharList = { "\\%": "%", "\\[": "\[", "\\]": "\]" };
+const EscapeCharList = { "\\%": "%", "\\<": "<", "\\>": ">" };
 const ValueList = { "qu-nu": 0, "op-nu": 0 };
-const Exp = /(?<!\\)\[[^\[\]]*(?<!\\)\]/g, ExpText = /(?<=\[).*(?=\])/;
+const Exp = /\<[^<>]*\>/g, ExpText = /(?<=\<).*(?=\>)/;
 
 const Style = "*.wjw-tools{\
 font-family: microsoft;\
@@ -124,12 +124,12 @@ function finishEscape(str) {
 }
 
 function expReslove(expText, valueList) {
-    let res = expText;
+    let res = finishEscape(expText);
     for (let key in valueList) {
         let value = valueList[key];
         res = res.replace(RegExp("(?<=\\b)" + key + "(?=\\b)"), String(value));
     }
-    return res;
+    return math.evaluate(res);
 }
 
 function textReslove(text, valueList) {
