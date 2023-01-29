@@ -2,7 +2,7 @@
 // @name         wjw-edit-tools
 // @namespace    https://github.com/yaochongyu/wjw-edit-tools
 // @author       yaochongyu
-// @version      1.2.3
+// @version      1.2.4
 // @grant        GM_addStyle
 // @description  Some tools for https://www.wenjuan.com
 // @require      https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.5.0/math.min.js
@@ -151,11 +151,11 @@ function textReslove(text, valueList) {
 
 function setAnswer(elem, answer) {
 
-    let index = toUpperCase(answer);
+    let index = answer.toUpperCase().charCodeAt() - 'A'.charCodeAt();
     let b = elem.getElementsByClassName("wj-checkbox__original");
 
-    function isSelected(answer) {
-        return b[answer].parentNode.className.indexOf("is-checked") != -1;
+    function isSelected(index) {
+        return b[index].parentNode.className.indexOf("is-checked") != -1;
     }
 
     if (isSelected(index)) return;
